@@ -2,45 +2,98 @@ from __future__ import unicode_literals
 from django.core.validators import *
 from django.db import models
 
+class Programa(models.Model):
+  TRIMESTRES = (
+      ('AB', 'Abril - Julio'),
+      ('EM', 'Enero - Marzo'), 
+      ('SD', 'Septiembre - Diciembre'),
+      ('NN', 'Ninguno')
+    )
+
+  codigo = models.CharField('Código de la materia', max_length=10,blank=True)
+  materia = models.CharField('Denominación', max_length=255,blank=True)
+  creditos = models.PositiveIntegerField('Unidades Créditos',blank=True, null=True, validators=[MaxValueValidator(16), MinValueValidator(0)])
+  h_teoria = models.PositiveIntegerField('Horas de Teoría',blank=True,null=True)
+  h_prac = models.PositiveIntegerField('Horas de Práctica',blank=True,null=True)
+  h_lab =models.PositiveIntegerField('Horas de Laboratorio',blank=True,null=True)
+  fecha_vigtrim = models.CharField('Trimestre',
+        max_length=2,
+        choices=TRIMESTRES,
+        default='NN',
+    )
+
+  fecha_vigano = models.IntegerField('Año', blank=True, null=True, validators=[MaxValueValidator(2017), MinValueValidator(1969)])
+  obj_g = models.TextField('Objetivos Generales', blank=True)
+  obj_e = models.TextField('Objetivos Específicos', blank=True)
+  contenidos = models.TextField('Contenidos', blank=True)
+  estrategias = models.TextField('Estrategias Metodológicas', blank=True)
+  estrat_eval = models.TextField('Estrategias de Evaluación', blank=True)
+  fuentes = models.TextField('Fuentes de Información Recomendadas', blank=True)
+  cronograma = models.TextField('Cronograma', blank=True)
+  sinoptico = models.TextField('Contenidos Sińópticos', blank=True)
+
+  def __str__(self):
+      return self.codigo + ": " + self.materia + " (" + self.fecha_vigtrim + " " + str(self.fecha_vigano) + ")"
+
+  def get_absolute_url(self):
+      return reverse('view_p', kwargs={'pk': self.pk})
+
+
 # Create your models here.
 class Document(models.Model):
     name = models.CharField(max_length=255)
-    description = models.CharField('Descripción',max_length=255, blank=True)
     document = models.FileField('Documento A Subir',upload_to='documents')
     uploaded_at = models.DateTimeField(auto_now_add=True)
-    asignatura= models.CharField('Nombre de la asignatura', max_length=255,blank=True)
-    codigo= models.CharField('Código de la materia', max_length=10,blank=True)
-    creditos= models.PositiveIntegerField('Créditos', blank=True,null=True)
+    asignatura= models.CharField('Denominación', max_length=255,blank=True)
+    codigo= models.CharField('Código', max_length=10,blank=True)
+    creditos= models.PositiveIntegerField('Unidades Créditos',blank=True, null=True, validators=[MaxValueValidator(16), MinValueValidator(0)])
     requisitos= models.TextField('Requisitos', blank=True)
     objetivos= models.TextField('Objetivos', blank=True)
     contenidos= models.TextField('Contenidos Sinópticos', blank=True)
     metodologias=models.TextField('Estrategias Metodológicas', blank=True)
     evaluacion=models.TextField('Estrategias de Evaluación', blank=True)
-    bibliografias=models.TextField('Referencias Bibliográficas', blank=True)
-    horas_teoria=models.PositiveIntegerField('Horas de Teoría',blank=True,null=True)
+    bibliografias=models.TextField('Fuentes de Información Recomendadas', blank=True)
     fecha= models.DateField('Entrada en Vigencia', blank=True,null=True)
-    horas_lab=models.PositiveIntegerField('Horas de Laboratorio',blank=True,null=True)
-    horas_practica=models.PositiveIntegerField('Horas de Práctica', blank=True,null=True)
+    horas_teoria=models.PositiveIntegerField('Horas de Teoría', blank=True,null=True,validators=[MaxValueValidator(40)])
+    horas_lab=models.PositiveIntegerField('Horas de Laboratorio', blank=True,null=True,validators=[MaxValueValidator(40)])
+    horas_practica=models.PositiveIntegerField('Horas de Práctica', blank=True,null=True,validators=[MaxValueValidator(40)])
     pdf_to_text = models.TextField(blank=True)
-    year = models.IntegerField('Año',blank=True, null=True, default=2017, validators=[MaxValueValidator(2017), MinValueValidator(1969)])
+    year = models.IntegerField('Año',blank=True, validators=[MaxValueValidator(2017), MinValueValidator(1969)], null=True)
     scanned = models.BooleanField('Utilizar Reconocimiento de Caracteres',blank=True)
+    justificacion = models.TextField('Justificación', blank=True, null=True)
+    nombre = models.CharField('Nombre', max_length=128,blank=False)
+    email = models.EmailField('Email', blank=False)
+    telefono = models.CharField('Teléfono', max_length=30, blank=False)
+    
+    opciones = (
+      ('PASA', 'P.A.S.A.'),
+      ('TRAN', 'Transcripción')
+      )
+    guardar = models.CharField('Guardar como:',
+        max_length=4,
+        choices=opciones,
+        default='TRAN',
+    )
 
     AB = 'AB'
     EM = 'EM'
     SD = 'SD'
+    NN = 'NN'
 
     TRIMESTRES = (
       (AB, 'Abril - Julio'),
       (EM, 'Enero - Marzo'), 
-      (SD, 'Septiembre - Diciembre')
+      (SD, 'Septiembre - Diciembre'),
+      (NN, 'Ninguno')
       )
 
     trimestre = models.CharField(
         max_length=2,
         choices=TRIMESTRES,
-        default=EM,
+        default=NN,
     )
 
+    ZZ = 'NN'
     CFM = 'Ciencias Físicas y Matemáticas'
     CSH = 'Ciencias Sociales y Humanidades'
     CB = 'Ciencias Biológicas'
@@ -171,13 +224,36 @@ class Document(models.Model):
                (CEU, 'Coordinación de Estudios Urbanos'),
                (CTH, 'Coordinación de Turismo, Hotelería y Hospitalidad'),
                (CCE, 'Coordinación de Comercio Exterior y Licenciatura en Comercio Internacional'),) ),
+        (ZZ, 'Ninguno'),
     )
 
     departamento = models.CharField(
         max_length=2,
         choices=DEPARTAMENTOS,
-        default=DCT,
+        default=ZZ,
     )
 
     def __str__(self):
       return self.name
+
+    def get_absolute_url(self):
+      return reverse('editar_t', kwargs={'pk': self.pk})
+
+class Referencia(models.Model):
+      titulo = models.CharField(max_length=255,blank=True)
+      editorial= models.CharField(max_length=255,blank=True)
+      edicion = models.CharField(max_length=255,blank=True)
+      document = models.ManyToManyField(Document, blank=False)
+
+class Autores(models.Model):
+      name = models.CharField('Nombre',max_length=255,blank=True)
+      apellido = models.CharField(max_length=255,blank=True)
+      referencia = models.ForeignKey(Referencia, blank=False)
+
+class CamposExtra(models.Model):
+    nombre = models.CharField('Nombre', max_length=255, blank=False)
+    value = models.TextField('Texto', blank=False)
+    document = models.ManyToManyField(Document, blank=False)
+
+    def __str__(self):
+        return self.nombre
